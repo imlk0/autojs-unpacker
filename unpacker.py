@@ -7,6 +7,7 @@ import sys
 import datetime
 from shutil import copyfile
 import json
+from argparse import RawTextHelpFormatter
 
 # TODO
 # - [x] speed up Java --json-> js Data pass (main.js 130ms)
@@ -20,17 +21,19 @@ description='''
 | (_| | |_| | || (_) | \__ \_____| |_| | | | | |_) | (_| | (__|   <  __/ |   
  \__,_|\__,_|\__\___// |___/      \__,_|_| |_| .__/ \__,_|\___|_|\_\___|_|   
                    |__/                      |_|                             
+                                                                    by: imlk
+https://github.com/KB5201314/autojs-unpacker
 '''
 
-parser = argparse.ArgumentParser(description=description)
+parser = argparse.ArgumentParser(description=description, formatter_class=RawTextHelpFormatter)
 
 parser.add_argument('mode', action="store", choices=['e', 'd'], help='choose encrypt or decrypt', type=str)
-parser.add_argument('-p', action="store", dest='pkg', type=str, required=True)
-parser.add_argument('-id', action="store", dest='input_dir', type=str)
-parser.add_argument('-od', action="store", dest='output_dir', type=str)
-parser.add_argument('-if', action="store", dest='input_file', type=str)
-parser.add_argument('-of', action="store", dest='output_file', type=str)
-parser.add_argument('--ismain', action="store_true", dest='is_main_file', default=False)
+parser.add_argument('-p', action="store", dest='pkg', type=str, required=True, help='package name or process name in android device to be attached')
+parser.add_argument('-id', action="store", dest='input_dir', type=str, help='directory of input files')
+parser.add_argument('-od', action="store", dest='output_dir', type=str, help='directory of output files')
+parser.add_argument('-if', action="store", dest='input_file', type=str, help='directory of single input file')
+parser.add_argument('-of', action="store", dest='output_file', type=str, help='directory of single output file')
+parser.add_argument('--ismain', action="store_true", dest='is_main_file', default=False, help='whether the file to be encrypted specified by -if is an entry(main) script')
 
 args = parser.parse_args()
 
@@ -90,7 +93,6 @@ def encrypt_file(input_file, output_file, is_main=False):
 device = frida.get_usb_device()
 session = device.attach(args.pkg)
 script_str=''
-# script_str = open(os.path.dirname(__file__) + '/node_modules/fast64/index.js').read()
 script_str = script_str + '\n' + (open(os.path.dirname(__file__) + '/payload.js').read())
 script = session.create_script(script_str)
 script.load()
