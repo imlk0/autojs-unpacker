@@ -1,21 +1,17 @@
 # 📤 autojs-unpacker
-This is a reverse engineering tool for Android AutoJS application. It can decrypt js files in the `project` directory and re-encrypt them.
-
-[中文文档](README_zh.md)
+这是基于frida的针对AutoJS应用程序的逆向工程工具。 它可以解密`project`目录中的js文件，并且支持重新加密。
 
 ## Feature
 
-- [x] decrypt a single file
-- [x] encrypt a single file
-- [x] decrypt/encrypt all files in the project directory
+- [x] 解密单个文件
+- [x] 加密单个文件
+- [x] 解密/加密项目目录中的所有文件
 
-## Usage
-
-- Clone this library to this machine, and make sure that `frida` has been installed via `pip`
-- First, make your android device connected to your computer by usb, and start `frida-server` as root user. 
-- Second, make sure that the applicaion you want to decrypt is running. 
-- Follow the usage below:
-
+## 用法
+- 将本库clone到本机，且确保已通过pip安装`frida`
+- 通过USB将您的android设备连接到计算机，并以root用户生成启动`frida-server`。
+- 确保要解密的应用程序正在运行。
+- 按照下面的`usage`来执行
 ```
 usage: unpacker.py [-h] -p PKG [-id INPUT_DIR] [-od OUTPUT_DIR] [-if INPUT_FILE] [-of OUTPUT_FILE] [--ismain] {e,d}
 
