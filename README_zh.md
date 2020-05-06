@@ -5,13 +5,25 @@
 - [x] 解密单个文件
 - [x] 加密单个文件
 - [x] 解密/加密项目目录中的所有文件
-- [ ] 支持将app运行在模拟器中
+- [x] 支持将app运行在模拟器中
 - [ ] 支持"encryptLevel": 1之外的其它加密
 - [ ] 增加修改js代码后免重新打包动态加载（想法是改完js后adb push到相应的/data/data/com.example.pkg/files/project/目录，然后重启应用）
 
 
 ## 前置要求
 - 设备被root（因为frida要求要以root权限启动frida-server）
+
+## 参数说明：
+- `-h` 打印帮助信息
+- **`-U` 连接到一个usb设备或者Android官方模拟器（大部分情况下，会需要该参数，否则默认会是选择当前电脑）**
+   > 在有多种设备的情况下，你也可以通过其它方式指定目标设备，如用`-D emulator-5554`连接到id为`emulator-5554`的设备。设备id可以用`frida-ls-devices`查看
+   > 本工具用于选择设备的参数与`frida-ps`工具相同，具体可看`-h`选项的输出结果
+- `-m` 后接字母d表示解密，接e表示加密
+- `-p` 指示目标app的包名
+- `--if`、`--of` 输入输出文件的路径
+- `--id`、`--od` 递归解密/加密project文件夹时，输入文件夹和产生结果的文件夹
+- `--ismain` 加密单个文件时，指示是否为app的入口js文件（这个在project.json中有指定，一般是main.js，加密时需要给入口js文件加上特殊的文件头）
+
 
 ## 用法
 1-2步是frida环境的搭建过程，frida官方有相关文档[https://frida.re/docs/android/](https://frida.re/docs/android/) 网上也有一些别人写的教程，这里我就不啰嗦了简单写一写
@@ -23,7 +35,7 @@
    pip install frida
    ```
 
-2. 通过USB将您的android设备连接到计算机，并以root用户启动`frida-server`。
+2. 通过USB将您的android设备连接到计算机，或启动一个Android模拟器，并以root用户启动`frida-server`。
     > frida是一种CS架构，在目标Android机器上运行一个`frida-server`后，本机可以连接到该server，然后借助该server来完成一系列操作。
 
     首先从[https://github.com/frida/frida/releases](https://github.com/frida/frida/releases)这里下载一个`frida-server`文件，比如我们的目标环境是Android，并且是arm设备，我们就下载一个[frida-server-12.8.20-android-arm.xz](https://github.com/frida/frida/releases/download/12.8.20/frida-server-12.8.20-android-arm.xz)
@@ -62,16 +74,18 @@
 
 6. 在手机上启动目标应用程序，确保它正在运行。
 
+
 7. 举例解密一个`main.js`：
 
    ```shell
-   ./unpacker.py d -p com.example.pkg -if ./unzip/assets/project/main.js -of ./src/main.js
+   ./unpacker.py -U -m d -p com.example.pkg --if ./unzip/assets/project/main.js --of ./src/main.js
    # 解释：
    # ./unpacker.py是脚本的路径
-   # d表示decrypt，解密模式
-   # -p com.example.pkg是指定包名
-   # -if ./unzip/assets/project/main.js 是本机上的输入文件路径为./unzip/assets/project/main.js
-   # -of ./src/main.js 是指定解密结果输出到本机上的./src/main.js这个路径
+   # -U 表示连接到USB设备或Android官方模拟器，
+   # -m d 表示decrypt，解密模式
+   # -p com.example.pkg 是指定包名
+   # --if ./unzip/assets/project/main.js 是本机上的输入文件路径为./unzip/assets/project/main.js
+   # --of ./src/main.js 是指定解密结果输出到本机上的./src/main.js这个路径
    ```
 
    你将看到这样的输出，说明文件已经被解密到`./src/main.js`：
@@ -87,7 +101,7 @@
 8. 重新加密该文件：加密`./src/main.js`，输出文件为`./en/main.js`
 
    ```shell
-   ./unpacker.py e -p com.example.pkg -if ./src/main.js -of ./en/main.js --ismain
+   ./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --ismain
    # 模式改成e, 即encrypt，加密模式
    # 由于该文件是project.json中指定的入口文件，入口文件有一个独特的文件头，加密时请指定参数--ismain
    ```
@@ -105,41 +119,27 @@
 10. 对修改后的apk文件重新签名，安装运行
 
 
-该工具的其余功能可按照下面的`usage`来执行
-
-```
-usage: unpacker.py [-h] -p PKG [-id INPUT_DIR] [-od OUTPUT_DIR] [-if INPUT_FILE] [-of OUTPUT_FILE] [--ismain] {e,d}
-
-             _        _                                        _             
-  __ _ _   _| |_ ___ (_)___       _   _ _ __  _ __   __ _  ___| | _____ _ __ 
- / _` | | | | __/ _ \| / __|_____| | | | '_ \| '_ \ / _` |/ __| |/ / _ \ '__|
-| (_| | |_| | || (_) | \__ \_____| |_| | | | | |_) | (_| | (__|   <  __/ |   
- \__,_|\__,_|\__\___// |___/      \__,_|_| |_| .__/ \__,_|\___|_|\_\___|_|   
-                   |__/                      |_|                             
-                                                                    by: imlk
-https://github.com/KB5201314/autojs-unpacker
-
-positional arguments:
-  {e,d}            choose encrypt or decrypt
-
-optional arguments:
-  -h, --help       show this help message and exit
-  -p PKG           package name or process name in android device to be attached
-  -id INPUT_DIR    directory of input files
-  -od OUTPUT_DIR   directory of output files
-  -if INPUT_FILE   directory of single input file
-  -of OUTPUT_FILE  directory of single output file
-  --ismain         whether the file to be encrypted specified by -if is an entry(main) script
-```
-
 ## Examples
-- decrypt a file
+- 解密一个文件
 ```shell
 # decrypt ./assets/project/main.js to ./src/main.js
-./unpacker.py d -p com.example.pkg -if ./assets/project/main.js -of ./src/main.js
+./unpacker.py -U -m d -p com.example.pkg --if ./assets/project/main.js --of ./src/main.js
 ```
-- encrypt a file
+
+- 加密普通js文件
 ```shell
-# encrypt ./src/main.js to ./src_en/main.js
-./unpacker.py e -p com.example.pkg -if ./src/main.js -of ./src_en/main.js
+# encrypt ./src/util.js to ./en/util.js
+./unpacker.py -U -m e -p com.example.pkg --if ./src/util.js --of ./en/util.js
+```
+
+- 加密入口js文件
+```shell
+# encrypt ./src/main.js to ./en/main.js
+./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --ismain
+```
+
+- 递归解密project目录的所有js文件
+```shell
+# decrypt ./assets/project/ to ./src/
+./unpacker.py -U -m d -p com.example.pkg --id ./assets/project/ --od ./src/
 ```

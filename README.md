@@ -17,8 +17,7 @@ This is a reverse engineering tool for Android AutoJS application. It can decryp
 - Follow the usage below:
 
 ```
-usage: unpacker.py [-h] -p PKG [-id INPUT_DIR] [-od OUTPUT_DIR] [-if INPUT_FILE] [-of OUTPUT_FILE] [--ismain] {e,d}
-
+Usage: unpacker.py -m {e,d} -p PKG [other arguments]
              _        _                                        _             
   __ _ _   _| |_ ___ (_)___       _   _ _ __  _ __   __ _  ___| | _____ _ __ 
  / _` | | | | __/ _ \| / __|_____| | | | '_ \| '_ \ / _` |/ __| |/ / _ \ '__|
@@ -28,17 +27,27 @@ usage: unpacker.py [-h] -p PKG [-id INPUT_DIR] [-od OUTPUT_DIR] [-if INPUT_FILE]
                                                                     by: imlk
 https://github.com/KB5201314/autojs-unpacker
 
-positional arguments:
-  {e,d}            choose encrypt or decrypt
 
-optional arguments:
-  -h, --help       show this help message and exit
-  -p PKG           package name or process name in android device to be attached
-  -id INPUT_DIR    directory of input files
-  -od OUTPUT_DIR   directory of output files
-  -if INPUT_FILE   directory of single input file
-  -of OUTPUT_FILE  directory of single output file
-  --ismain         whether the file to be encrypted specified by -if is an entry(main) script
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -D ID, --device=ID    connect to device with the given ID
+  -U, --usb             connect to USB device
+  -R, --remote          connect to remote frida-server
+  -H HOST, --host=HOST  connect to remote frida-server on HOST
+  -O FILE, --options-file=FILE
+                        text file containing additional command line options
+  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt
+  -p PKG, --pkg=PKG     package name or process name in android device to be
+                        attached
+  --id=INPUT_DIR        directory of input files. entry js file(e.g main.js)
+                        will not be recognized if project.json not in this
+                        directory
+  --od=OUTPUT_DIR       directory of output files
+  --if=INPUT_FILE       directory of single input file
+  --of=OUTPUT_FILE      directory of single output file
+  --ismain              whether the file to be encrypted specified by -if is
+                        an entry(main) script
 ```
 
 ## Examples
