@@ -58,7 +58,50 @@ function encrypt(byteListInJs) {
 }
 
 
+function get_project_path() {
+    return Promise(function (resolve, reject) {
+        try {
+            Java.perform(function () {
+                try {
+                    var got = false;
+                    Java.choose('android.app.ContextImpl', {
+                        onMatch: function (instance) {
+                            if (!got) {
+                                got = true;
+                                var filesDir = Java.cast(instance, Java.use('android.app.ContextImpl')).getFilesDir().getAbsolutePath();
+                                resolve(filesDir);
+                            }
+                            return "stop";
+                        },
+                        onComplete: function () {
+                            if(!got){
+                                console.log("bug, unable to found any 'android.app.ContextImpl' instance!!!")
+                                reject();
+                            }
+                        }
+                    })
+                } catch (e) {
+                    reject(e)
+                }
+            })
+        } catch (e) {
+            reject(e)
+        }
+    });
+}
+
+
+function write_file(full_path, data) {
+    var f = new File(full_path, 'w')
+    f.write(data)
+    f.close()
+}
+
+
 rpc.exports = {
     "decrypt": decrypt,
     "encrypt": encrypt,
+    "getprojectpath": get_project_path,
+    "writefile": write_file,
+
 }

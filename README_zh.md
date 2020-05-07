@@ -143,3 +143,7 @@
 # decrypt ./assets/project/ to ./src/
 ./unpacker.py -U -m d -p com.example.pkg --id ./assets/project/ --od ./src/
 ```
+
+## 常见问题
+1. 弹Toast提示"Error:: 语法错误 (main.js#1)"
+   

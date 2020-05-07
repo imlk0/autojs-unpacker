@@ -2,6 +2,7 @@
 
 import frida
 import argparse
+import time
 import os
 import sys
 import datetime
@@ -16,7 +17,7 @@ import traceback
 # - [] speed up js --base64-> java Data pass (main.js 1000ms, js base64 encode is too slow)
 
 
-description='''%prog -m {e,d} -p PKG [other arguments]
+description='''%prog -m {e,d,l} -p PKG [other arguments]
              _        _                                        _             
   __ _ _   _| |_ ___ (_)___       _   _ _ __  _ __   __ _  ___| | _____ _ __ 
  / _` | | | | __/ _ \| / __|_____| | | | '_ \| '_ \ / _` |/ __| |/ / _ \ '__|
@@ -37,7 +38,7 @@ class AutoJSUnpackerApplication(ConsoleApplication):
 
     def _add_options(self, parser):
         # parser.formatter_class = RawTextHelpFormatter
-        parser.add_option('-m', '--mode', action="store", choices=['e', 'd'], type='choice', help='choose "e" for encrypt, or "d" for decrypt')
+        parser.add_option('-m', '--mode', action="store", choices=['e', 'd', 'l'], type='choice', help='choose "e" for encrypt, or "d" for decrypt, or  for load')
         parser.add_option('-p', '--pkg', action="store", dest='pkg', type=str, help='package name or process name in android device to be attached')
         parser.add_option('--id', action="store", dest='input_dir', type=str, help='directory of input files. entry js file(e.g main.js) will not be recognized if project.json not in this directory')
         parser.add_option('--od', action="store", dest='output_dir', type=str, help='directory of output files')
@@ -53,7 +54,7 @@ class AutoJSUnpackerApplication(ConsoleApplication):
         if not self.options.pkg:
             print('argument -p/--pkg must be specified ')
             self._exit(-1)
-
+        self.pkg = self.options.pkg
         self.opt_read_from_file = self.options.input_file or self.options.output_file
         if self.options.input_dir or self.options.output_dir:
             if self.opt_read_from_file:
@@ -78,7 +79,7 @@ class AutoJSUnpackerApplication(ConsoleApplication):
     def _start(self):
         try:
             try:
-                session = self._device.attach(self.options.pkg)
+                session = self._device.attach(self.pkg)
             except frida.ProcessNotFoundError as e:
                 print('[error] {}'.format(e))
                 print('[error] Please make sure the target APP is running.')
@@ -96,6 +97,9 @@ class AutoJSUnpackerApplication(ConsoleApplication):
                     self.decrypt_file(self.options.input_file, self.options.output_file)
                 elif self.options.mode == 'e':
                     self.encrypt_file(self.options.input_file, self.options.output_file, is_main=(self.opt_read_from_file and self.options.is_main_file))
+                elif self.options.mode == 'l':
+                    self.encrypt_file_and_load(self.options.input_file, self.options.output_file, is_main=(self.opt_read_from_file and self.options.is_main_file))
+
             else: # from project directory
                 try:
                     main_file = json.load(open(os.path.join(self.options.input_dir,'./project.json'),'r'))['main']
@@ -126,7 +130,9 @@ class AutoJSUnpackerApplication(ConsoleApplication):
             self._exit(0)
         except BaseException as e:
             traceback.print_exc()
-            print('[error] {}'.format(e))
+            msg = e.__str__() # TypeError: __str__ returned non-string (type NoneType)
+            if msg:
+                print('[error] {}'.format(msg))
             self._exit(1)
 
 
@@ -159,6 +165,37 @@ class AutoJSUnpackerApplication(ConsoleApplication):
             bs_new = list(bytes(magic_num_normal, encoding='utf-8')) + bs_new
         self.save_bytes_to_file(output_file, bs_new)
         print('\t\tOK')
+
+
+    def encrypt_file_and_load(self, input_file, file_relative_path, is_main=False):
+        file_relative_path = os.path.normpath(file_relative_path)
+        print('[load] {} -> (data){}'.format(input_file, file_relative_path), flush=True, end='')
+        bs = self.read_file_to_bytes(input_file)
+        bs_new = self.script.exports.encrypt(bs)
+        if is_main:
+            bs_new = list(bytes(magic_num_main, encoding='utf-8')) + bs_new
+        else:
+            bs_new = list(bytes(magic_num_normal, encoding='utf-8')) + bs_new
+        self.write_project_dir_in_device(file_relative_path, bs_new)
+        print('\t\tOK')
+
+        print('[restart] {}'.format(self.pkg), flush=True, end='')
+        self.execute_cmd(['/system/bin/sh', '/system/bin/am', 'force-stop', self.pkg])
+        time.sleep(1)
+        self.execute_cmd(['/system/bin/sh', '/system/bin/settings', 'put', 'secure', 'enabled_accessibility_services', self.pkg + '/com.stardust.autojs.core.accessibility.AccessibilityService'])
+        self.execute_cmd(['/system/bin/sh', '/system/bin/monkey', '-p', self.pkg, '1'])
+        print('\t\tOK')
+
+    def get_project_dir_in_device(self):
+        return self.script.exports.getprojectpath()
+
+    def write_project_dir_in_device(self, relative_path, data):
+        full_path = self.get_project_dir_in_device() + '/project/' + relative_path
+        self.script.exports.writefile(full_path, list(map(lambda x:(x+256)%256, data)))
+
+    def execute_cmd(self,cmd):
+        pid = self._device.spawn(cmd)
+        self._device.resume(pid)
 
 if __name__ == '__main__':
     app = AutoJSUnpackerApplication()
