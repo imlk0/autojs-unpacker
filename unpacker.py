@@ -44,7 +44,7 @@ class AutoJSUnpackerApplication(ConsoleApplication):
         parser.add_option('--od', action="store", dest='output_dir', type=str, help='directory of output files')
         parser.add_option('--if', action="store", dest='input_file', type=str, help='directory of single input file')
         parser.add_option('--of', action="store", dest='output_file', type=str, help='directory of single output file')
-        parser.add_option('--ismain', action="store_true", dest='is_main_file', default=False, help='whether the file to be encrypted specified by -if is an entry(main) script')
+        parser.add_option('--isui', action="store_true", dest='is_ui_file', default=False, help='whether the file to be encrypted specified by -if is an ui script')
 
     def _initialize(self, parser, options, args):
         self.options = options
@@ -96,9 +96,9 @@ class AutoJSUnpackerApplication(ConsoleApplication):
                 if self.options.mode == 'd':
                     self.decrypt_file(self.options.input_file, self.options.output_file)
                 elif self.options.mode == 'e':
-                    self.encrypt_file(self.options.input_file, self.options.output_file, is_main=(self.opt_read_from_file and self.options.is_main_file))
+                    self.encrypt_file(self.options.input_file, self.options.output_file, is_main=(self.opt_read_from_file and self.options.is_ui_file))
                 elif self.options.mode == 'l':
-                    self.encrypt_file_and_load(self.options.input_file, self.options.output_file, is_main=(self.opt_read_from_file and self.options.is_main_file))
+                    self.encrypt_file_and_load(self.options.input_file, self.options.output_file, is_main=(self.opt_read_from_file and self.options.is_ui_file))
 
             else: # from project directory
                 try:

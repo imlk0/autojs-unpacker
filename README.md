@@ -17,7 +17,7 @@ This is a reverse engineering tool for Android AutoJS application. It can decryp
 - Follow the usage below:
 
 ```
-Usage: unpacker.py -m {e,d} -p PKG [other arguments]
+Usage: unpacker.py -m {e,d,l} -p PKG [other arguments]
              _        _                                        _             
   __ _ _   _| |_ ___ (_)___       _   _ _ __  _ __   __ _  ___| | _____ _ __ 
  / _` | | | | __/ _ \| / __|_____| | | | '_ \| '_ \ / _` |/ __| |/ / _ \ '__|
@@ -37,7 +37,8 @@ Options:
   -H HOST, --host=HOST  connect to remote frida-server on HOST
   -O FILE, --options-file=FILE
                         text file containing additional command line options
-  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt
+  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt, or  for
+                        load
   -p PKG, --pkg=PKG     package name or process name in android device to be
                         attached
   --id=INPUT_DIR        directory of input files. entry js file(e.g main.js)
@@ -46,8 +47,8 @@ Options:
   --od=OUTPUT_DIR       directory of output files
   --if=INPUT_FILE       directory of single input file
   --of=OUTPUT_FILE      directory of single output file
-  --ismain              whether the file to be encrypted specified by -if is
-                        an entry(main) script
+  --isui                whether the file to be encrypted specified by -if is
+                        an ui scripto
 ```
 
 ## Examples

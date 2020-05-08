@@ -7,7 +7,7 @@
 - [x] 解密/加密项目目录中的所有文件
 - [x] 支持将app运行在模拟器中
 - [ ] 支持"encryptLevel": 1之外的其它加密
-- [ ] 增加修改js代码后免重新打包动态加载（想法是改完js后adb push到相应的/data/data/com.example.pkg/files/project/目录，然后重启应用）
+- [x] 增加修改js代码后免重新打包动态加载（想法是改完js后adb push到相应的/data/data/com.example.pkg/files/project/目录，然后重启应用）
 
 
 ## 前置要求
@@ -22,7 +22,42 @@
 - `-p` 指示目标app的包名
 - `--if`、`--of` 输入输出文件的路径
 - `--id`、`--od` 递归解密/加密project文件夹时，输入文件夹和产生结果的文件夹
-- `--ismain` 加密单个文件时，指示是否为app的入口js文件（这个在project.json中有指定，一般是main.js，加密时需要给入口js文件加上特殊的文件头）
+- `--isui` 加密单个文件时，指示是否为使用ui界面的js文件，一般app的入口js文件会是个使用ui的js文件（这个在project.json中有指定，一般是main.js，加密时需要给使用到ui界面的文件加上特殊的文件头，否则将以脚本模式解释执行）
+
+```
+Usage: unpacker.py -m {e,d,l} -p PKG [other arguments]
+             _        _                                        _             
+  __ _ _   _| |_ ___ (_)___       _   _ _ __  _ __   __ _  ___| | _____ _ __ 
+ / _` | | | | __/ _ \| / __|_____| | | | '_ \| '_ \ / _` |/ __| |/ / _ \ '__|
+| (_| | |_| | || (_) | \__ \_____| |_| | | | | |_) | (_| | (__|   <  __/ |   
+ \__,_|\__,_|\__\___// |___/      \__,_|_| |_| .__/ \__,_|\___|_|\_\___|_|   
+                   |__/                      |_|                             
+                                                                    by: imlk
+https://github.com/KB5201314/autojs-unpacker
+
+
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -D ID, --device=ID    connect to device with the given ID
+  -U, --usb             connect to USB device
+  -R, --remote          connect to remote frida-server
+  -H HOST, --host=HOST  connect to remote frida-server on HOST
+  -O FILE, --options-file=FILE
+                        text file containing additional command line options
+  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt, or  for
+                        load
+  -p PKG, --pkg=PKG     package name or process name in android device to be
+                        attached
+  --id=INPUT_DIR        directory of input files. entry js file(e.g main.js)
+                        will not be recognized if project.json not in this
+                        directory
+  --od=OUTPUT_DIR       directory of output files
+  --if=INPUT_FILE       directory of single input file
+  --of=OUTPUT_FILE      directory of single output file
+  --isui                whether the file to be encrypted specified by -if is
+                        an ui scripto
+```
 
 
 ## 用法
@@ -103,7 +138,7 @@
    ```shell
    ./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --ismain
    # 模式改成e, 即encrypt，加密模式
-   # 由于该文件是project.json中指定的入口文件，入口文件有一个独特的文件头，加密时请指定参数--ismain
+   # 由于该文件是使用ui的js文件，它有一个独特的文件头，加密时请指定参数--isui
    ```
 
    你将看到这样的输出，说明加密成功：
@@ -132,7 +167,7 @@
 ./unpacker.py -U -m e -p com.example.pkg --if ./src/util.js --of ./en/util.js
 ```
 
-- 加密入口js文件
+- 加密使用ui的js文件
 ```shell
 # encrypt ./src/main.js to ./en/main.js
 ./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --ismain
