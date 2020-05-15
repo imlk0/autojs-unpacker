@@ -79,7 +79,10 @@ class AutoJSUnpackerApplication(ConsoleApplication):
     def _start(self):
         try:
             try:
-                session = self._device.attach(self.pkg)
+                try:
+                    session = self._device.attach(self.pkg)
+                except frida.ProcessNotFoundError:
+                    session = self._device.attach(self.pkg + ":script")
             except frida.ProcessNotFoundError as e:
                 print('[error] {}'.format(e))
                 print('[error] Please make sure the target APP is running.')
