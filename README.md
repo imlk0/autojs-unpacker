@@ -37,8 +37,8 @@ Options:
   -H HOST, --host=HOST  connect to remote frida-server on HOST
   -O FILE, --options-file=FILE
                         text file containing additional command line options
-  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt, or  for
-                        load
+  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt, or "l" for
+                        hot load into device
   -p PKG, --pkg=PKG     package name or process name in android device to be
                         attached
   --id=INPUT_DIR        directory of input files. entry js file(e.g main.js)
@@ -48,17 +48,23 @@ Options:
   --if=INPUT_FILE       directory of single input file
   --of=OUTPUT_FILE      directory of single output file
   --isui                whether the file to be encrypted specified by -if is
-                        an ui scripto
+                        an ui script
 ```
 
 ## Examples
 - decrypt a file
 ```shell
 # decrypt ./assets/project/main.js to ./src/main.js
-./unpacker.py d -p com.example.pkg -if ./assets/project/main.js -of ./src/main.js
+./unpacker.py -U -m d -p com.example.pkg --if ./assets/project/main.js --of ./src/main.js
 ```
 - encrypt a file
 ```shell
 # encrypt ./src/main.js to ./src_en/main.js
-./unpacker.py e -p com.example.pkg -if ./src/main.js -of ./src_en/main.js
+./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./src_en/main.js
+```
+- hotload a file
+```shell
+# encrypt and load ./src/main.js to (data)/main.js
+# this will encrypt ./src/main.js on your computer and replace with app's cache on your phone, so that you can quickly see the effect of modifying the script.
+./unpacker.py -U -m l -p com.example.pkg --if ./src/main.js --of main.js
 ```

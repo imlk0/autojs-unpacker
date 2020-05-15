@@ -7,7 +7,7 @@
 - [x] 解密/加密项目目录中的所有文件
 - [x] 支持将app运行在模拟器中
 - [ ] 支持"encryptLevel": 1之外的其它加密
-- [x] 增加修改js代码后免重新打包动态加载（想法是改完js后adb push到相应的/data/data/com.example.pkg/files/project/目录，然后重启应用）
+- [x] 增加修改js代码后免重新打包动态加载（实际上是改完js后adb push到相应的/data/data/com.example.pkg/files/project/目录，然后重启应用）
 
 
 ## 前置要求
@@ -45,8 +45,8 @@ Options:
   -H HOST, --host=HOST  connect to remote frida-server on HOST
   -O FILE, --options-file=FILE
                         text file containing additional command line options
-  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt, or  for
-                        load
+  -m MODE, --mode=MODE  choose "e" for encrypt, or "d" for decrypt, or "l" for
+                        hot load into device
   -p PKG, --pkg=PKG     package name or process name in android device to be
                         attached
   --id=INPUT_DIR        directory of input files. entry js file(e.g main.js)
@@ -56,7 +56,7 @@ Options:
   --if=INPUT_FILE       directory of single input file
   --of=OUTPUT_FILE      directory of single output file
   --isui                whether the file to be encrypted specified by -if is
-                        an ui scripto
+                        an ui script
 ```
 
 
@@ -131,8 +131,9 @@ Options:
 
 
 8. 按照你的意愿对`./src/main.js`的逻辑进行修改
+   接下来你可以选择重新加密并替换掉apk中问文件，或者使用本工具的hot load功能将你所做的修改快速应用到app中，下面将分别举例这两种模型：
 
-
+**重新打包apk**
 8. 重新加密该文件：加密`./src/main.js`，输出文件为`./en/main.js`
 
    ```shell
@@ -152,6 +153,28 @@ Options:
    用任意压缩工具打开原始apk，将你修改过且重新加密后的文件替换掉对应的原js文件
 
 10. 对修改后的apk文件重新签名，安装运行
+
+**不打包apk，直接hot load到设备中看效果**
+8. 假设你已经对`./src/main.js`做了修改，可以使用该工具热加载到目标设备中
+
+   原理：
+   首次启动目标app后，会在`/data/data/com.example.pkg/files/project/`目录下缓存apk中的js文件，该工具通过替换这里的缓存文件来完成热加载。不需要重新打包安装即可快速看到效果。
+   同样由于该原理限制，这种修改是临时的，不会对apk造成修改，而且在对目标app执行`清除数据`的操作后可以消除热加载产生的修改
+
+   ```shell
+   ./unpacker.py -U -m l -p com.example.pkg --if ./src/main.js --of main.js --ismain
+   # 模式改成l, 即hot load，热加载
+   # --if 指定修改后的明文js文件（未加密的文件）
+   # --of 指示替换到哪个位置下。需要注意这里的位置是相对于project目录的位置，比如你想要替换掉apk中的assets/project/main.js这个文件，那么你应该指定参数--of main.js
+   # 由于该文件是使用ui的js文件，它有一个独特的文件头，加密时请指定参数--isui
+   ```
+   
+   你将看到这样的输出，并且目标app会自动重启，说明热加载替换成功：
+
+   ```
+   [load] ./src/main.js -> (data)main.js         OK
+   [restart] com.example.pkg  OK
+   ```
 
 
 ## Examples
@@ -179,6 +202,11 @@ Options:
 ./unpacker.py -U -m d -p com.example.pkg --id ./assets/project/ --od ./src/
 ```
 
+- 热加载，用你的一个js文件替换掉目标app中的js文件，并使这种修改立即生效
+```shell
+# encrypt and load ./src/main.js to (data)/main.js
+./unpacker.py -U -m l -p com.example.pkg --if ./src/main.js --of main.js
+
+
 ## 常见问题
-1. 弹Toast提示"Error:: 语法错误 (main.js#1)"
-   
+待更新
