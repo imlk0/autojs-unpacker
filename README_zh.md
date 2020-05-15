@@ -18,11 +18,11 @@
 - **`-U` 连接到一个usb设备或者Android官方模拟器（大部分情况下，会需要该参数，否则默认会是选择当前电脑）**
    > 在有多种设备的情况下，你也可以通过其它方式指定目标设备，如用`-D emulator-5554`连接到id为`emulator-5554`的设备。设备id可以用`frida-ls-devices`查看
    > 本工具用于选择设备的参数与`frida-ps`工具相同，具体可看`-h`选项的输出结果
-- `-m` 后接字母d表示解密，接e表示加密
+- `-m` 后接字母d表示解密，接e表示加密，l表示热加载替换
 - `-p` 指示目标app的包名
 - `--if`、`--of` 输入输出文件的路径
 - `--id`、`--od` 递归解密/加密project文件夹时，输入文件夹和产生结果的文件夹
-- `--isui` 加密单个文件时，指示是否为使用ui界面的js文件，一般app的入口js文件会是个使用ui的js文件（这个在project.json中有指定，一般是main.js，加密时需要给使用到ui界面的文件加上特殊的文件头，否则将以脚本模式解释执行）
+- `--isui` 加密单个文件时，指示待加密的是一个拥有ui界面的js文件，具体看这个js文件内容开头是否为`"ui";`，一般来说，app的入口js文件会是个使用ui的js文件（这个在project.json中有指定，一般是main.js，加密时需要给使用到ui界面的文件加上特殊的文件头，否则将以脚本模式解释执行）
 
 ```
 Usage: unpacker.py -m {e,d,l} -p PKG [other arguments]
@@ -62,6 +62,7 @@ Options:
 
 ## 用法
 1-2步是frida环境的搭建过程，frida官方有相关文档[https://frida.re/docs/android/](https://frida.re/docs/android/) 网上也有一些别人写的教程，这里我就不啰嗦了简单写一写
+
 **在运行本工具前，请务必确保frida官方提供的工具（如frida-ps之类的）在你的环境中已经能够运行**。
 
 1. 通过pip安装`frida`
@@ -92,9 +93,13 @@ Options:
     试一下在本机执行frida提供的工具`frida-ps -U`，如果能看到输出说明环境已经搭建好了。
 
 **下面进入本工具的使用部分**
+
 该工具由`unpacker.py`和`payload.js`两个部分组成，前者负责连接目标机器和处理文件，后者被前者加载到目标机器中负责加密解密。
+
 原理是：
+
 读取待解密的js文件内容，然后借助frida调用待破解的app中存在的解密函数，并将待解密数据作为参数，最后获取解密后的数据保存到本机上方便编辑。
+
 编辑完以后用类似的过程调用加密函数，把改完的js文件加密回去。
 
 
@@ -131,15 +136,17 @@ Options:
 
 
 8. 按照你的意愿对`./src/main.js`的逻辑进行修改
+
    接下来你可以选择重新加密并替换掉apk中问文件，或者使用本工具的hot load功能将你所做的修改快速应用到app中，下面将分别举例这两种模型：
 
 **重新打包apk**
+
 8. 重新加密该文件：加密`./src/main.js`，输出文件为`./en/main.js`
 
    ```shell
-   ./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --ismain
+   ./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --isui
    # 模式改成e, 即encrypt，加密模式
-   # 由于该文件是使用ui的js文件，它有一个独特的文件头，加密时请指定参数--isui
+   # 由于该文件是使用ui界面的js文件，它有一个独特的文件头，加密时请指定参数--isui
    ```
 
    你将看到这样的输出，说明加密成功：
@@ -155,18 +162,24 @@ Options:
 10. 对修改后的apk文件重新签名，安装运行
 
 **不打包apk，直接hot load到设备中看效果**
+
 8. 假设你已经对`./src/main.js`做了修改，可以使用该工具热加载到目标设备中
 
    原理：
+
    首次启动目标app后，会在`/data/data/com.example.pkg/files/project/`目录下缓存apk中的js文件，该工具通过替换这里的缓存文件来完成热加载。不需要重新打包安装即可快速看到效果。
+   
    同样由于该原理限制，这种修改是临时的，不会对apk造成修改，而且在对目标app执行`清除数据`的操作后可以消除热加载产生的修改
 
+   使用前，请额外注意下面关于`--of`选项的含义
+
+
    ```shell
-   ./unpacker.py -U -m l -p com.example.pkg --if ./src/main.js --of main.js --ismain
+   ./unpacker.py -U -m l -p com.example.pkg --if ./src/main.js --of main.js --isui
    # 模式改成l, 即hot load，热加载
    # --if 指定修改后的明文js文件（未加密的文件）
    # --of 指示替换到哪个位置下。需要注意这里的位置是相对于project目录的位置，比如你想要替换掉apk中的assets/project/main.js这个文件，那么你应该指定参数--of main.js
-   # 由于该文件是使用ui的js文件，它有一个独特的文件头，加密时请指定参数--isui
+   # 由于该文件是使用ui界面的js文件，它有一个独特的文件头，加密时请指定参数--isui
    ```
    
    你将看到这样的输出，并且目标app会自动重启，说明热加载替换成功：
@@ -193,7 +206,7 @@ Options:
 - 加密使用ui的js文件
 ```shell
 # encrypt ./src/main.js to ./en/main.js
-./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --ismain
+./unpacker.py -U -m e -p com.example.pkg --if ./src/main.js --of ./en/main.js --isui
 ```
 
 - 递归解密project目录的所有js文件
@@ -206,7 +219,7 @@ Options:
 ```shell
 # encrypt and load ./src/main.js to (data)/main.js
 ./unpacker.py -U -m l -p com.example.pkg --if ./src/main.js --of main.js
-
+```
 
 ## 常见问题
 待更新
