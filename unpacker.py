@@ -38,7 +38,7 @@ class AutoJSUnpackerApplication(ConsoleApplication):
 
     def _add_options(self, parser):
         # parser.formatter_class = RawTextHelpFormatter
-        parser.add_option('-m', '--mode', action="store", choices=['e', 'd', 'l'], type='choice', help='choose "e" for encrypt, or "d" for decrypt, or  for load')
+        parser.add_option('-m', '--mode', action="store", choices=['e', 'd', 'l'], type='choice', help='choose "e" for encrypt, or "d" for decrypt, or "l" for hot load into device')
         parser.add_option('-p', '--pkg', action="store", dest='pkg', type=str, help='package name or process name in android device to be attached')
         parser.add_option('--id', action="store", dest='input_dir', type=str, help='directory of input files. entry js file(e.g main.js) will not be recognized if project.json not in this directory')
         parser.add_option('--od', action="store", dest='output_dir', type=str, help='directory of output files')
@@ -104,6 +104,10 @@ class AutoJSUnpackerApplication(ConsoleApplication):
                     self.encrypt_file_and_load(self.options.input_file, self.options.output_file, is_main=(self.opt_read_from_file and self.options.is_ui_file))
 
             else: # from project directory
+                if self.options.mode == 'l':
+                    print('[error] We currently only support single js file hot loading.')
+                    self._exit(1)
+                    return
                 try:
                     main_file = json.load(open(os.path.join(self.options.input_dir,'./project.json'),'r'))['main']
                     main_file = os.path.normpath(os.path.join(self.options.input_dir,main_file))
